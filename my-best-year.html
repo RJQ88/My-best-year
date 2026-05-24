@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Best Year">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0a0f">
+<title>My Best Year</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --gold: #c8a96e; --gold-dim: #c8a96e44; --gold-faint: #c8a96e22;
+    --bg: #0a0a0f; --bg2: #0f0d1a; --bg3: #13111e;
+    --text: #e8e0d0; --muted: #888;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bot: env(safe-area-inset-bottom, 0px);
+  }
+  html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: 'Lato', sans-serif; -webkit-font-smoothing: antialiased; }
+  #app { display: flex; flex-direction: column; height: 100dvh; }
+  .header { background: linear-gradient(135deg,#1a1408,#0f0d1a); border-bottom: 1px solid var(--gold-dim); padding: 14px 20px 12px; padding-top: calc(14px + var(--safe-top)); flex-shrink: 0; display:flex; justify-content:space-between; align-items:flex-end; }
+  .header-left .header-label { font-size:10px; letter-spacing:5px; color:var(--gold); text-transform:uppercase; font-weight:300; }
+  .header-left .header-date { font-family:'Cormorant Garamond',serif; font-size:20px; font-weight:600; color:#f0e8d8; margin-top:2px; }
+  .header-right { display:flex; gap:8px; }
+  .icon-btn { background:none; border:1px solid var(--gold-faint); border-radius:8px; color:var(--gold); font-size:16px; padding:6px 9px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .nav { display:flex; background:var(--bg2); border-bottom:1px solid var(--gold-faint); flex-shrink:0; }
+  .nav-btn { flex:1; padding:13px 4px; background:none; border:none; border-bottom:2px solid transparent; color:var(--muted); font-size:10px; letter-spacing:1.5px; text-transform:uppercase; cursor:pointer; font-family:'Lato',sans-serif; transition:all 0.2s; -webkit-tap-highlight-color:transparent; }
+  .nav-btn.active { color:var(--gold); border-bottom-color:var(--gold); }
+  .scroll-area { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:18px 16px; padding-bottom:calc(90px + var(--safe-bot)); }
+  .scroll-area::-webkit-scrollbar { display:none; }
+  .card { background:var(--bg3); border:1px solid var(--gold-faint); border-radius:14px; padding:18px; margin-bottom:14px; }
+  .card-title { font-size:9px; letter-spacing:3px; color:var(--gold); text-transform:uppercase; margin-bottom:12px; font-weight:700; }
+  .card-hint { font-size:13px; color:var(--muted); margin-top:-8px; margin-bottom:12px; font-style:italic; line-height:1.5; }
+  input[type=text], textarea { width:100%; background:var(--bg); border:1px solid var(--gold-faint); border-radius:9px; padding:11px 13px; color:var(--text); font-size:15px; font-family:'Lato',sans-serif; outline:none; margin-bottom:8px; transition:border-color 0.2s; -webkit-appearance:none; }
+  input[type=text]:focus, textarea:focus { border-color:var(--gold-dim); }
+  textarea { resize:vertical; min-height:80px; line-height:1.5; }
+  .action-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+  .check-box { width:26px; height:26px; border-radius:7px; border:1.5px solid var(--gold-dim); background:var(--bg); cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:14px; color:var(--bg); transition:background 0.2s; -webkit-tap-highlight-color:transparent; }
+  .check-box.checked { background:var(--gold); border-color:var(--gold); }
+  .action-row input { margin-bottom:0; flex:1; }
+  .action-row input.done { text-decoration:line-through; opacity:0.4; }
+  .progress-text { color:var(--gold); font-size:13px; margin-top:6px; }
+  .slider-wrap { margin-bottom:18px; }
+  .slider-label { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+  .slider-name { font-size:14px; }
+  .slider-val { color:var(--gold); font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:600; }
+  input[type=range] { width:100%; accent-color:var(--gold); height:4px; -webkit-appearance:none; background:#222; border-radius:4px; outline:none; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:20px; height:20px; border-radius:50%; background:var(--gold); cursor:pointer; }
+  .bar-bg { background:#111; border-radius:4px; height:5px; overflow:hidden; margin-top:4px; }
+  .bar-fill { height:100%; background:linear-gradient(90deg,var(--gold),#a07840); border-radius:4px; transition:width 0.3s; }
+  .bar-row { display:flex; justify-content:space-between; align-items:center; font-size:13px; margin-bottom:5px; }
+  .bar-score { color:var(--gold); font-weight:700; }
+  .chat-messages { display:flex; flex-direction:column; gap:10px; margin-bottom:14px; }
+  .bubble { padding:12px 15px; font-size:15px; line-height:1.6; max-width:88%; animation:fadeUp 0.25s ease; }
+  .bubble.user { background:#1e1830; border:1px solid var(--gold-dim); border-radius:16px 16px 4px 16px; align-self:flex-end; }
+  .bubble.assistant { background:var(--bg3); border:1px solid var(--gold-faint); border-radius:16px 16px 16px 4px; align-self:flex-start; }
+  .bubble.typing { color:var(--gold); font-style:italic; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  .suggestions { display:flex; flex-direction:column; gap:8px; }
+  .suggestion-btn { background:var(--bg); border:1px solid var(--gold-faint); border-radius:9px; padding:11px 13px; color:var(--text); font-size:14px; cursor:pointer; text-align:left; font-family:'Lato',sans-serif; -webkit-tap-highlight-color:transparent; }
+  .chat-bar { position:fixed; bottom:0; left:0; right:0; background:var(--bg2); border-top:1px solid var(--gold-faint); padding:10px 14px; padding-bottom:calc(10px + var(--safe-bot)); display:flex; gap:10px; z-index:100; }
+  .chat-bar input { flex:1; margin-bottom:0; }
+  .send-btn { background:linear-gradient(135deg,var(--gold),#a07840); color:var(--bg); border:none; border-radius:9px; padding:11px 18px; font-size:13px; font-weight:700; cursor:pointer; font-family:'Lato',sans-serif; flex-shrink:0; -webkit-tap-highlight-color:transparent; }
+  .send-btn:disabled { opacity:0.5; }
+  .quote { font-family:'Cormorant Garamond',serif; font-style:italic; color:var(--gold); font-size:15px; text-align:center; border-top:1px solid var(--gold-faint); padding-top:18px; margin-top:6px; line-height:1.6; }
+  .quote cite { display:block; font-size:12px; letter-spacing:2px; font-style:normal; margin-top:6px; opacity:0.7; }
+  .toast { position:fixed; top:24px; left:50%; transform:translateX(-50%); background:var(--gold); color:var(--bg); padding:10px 22px; border-radius:30px; font-size:13px; font-weight:700; z-index:999; animation:fadeUp 0.2s ease; white-space:nowrap; display:none; }
+  .tab-section { display:none; }
+  .tab-section.active { display:block; }
+  /* MODAL */
+  .modal-bg { position:fixed; inset:0; background:#000a; z-index:200; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .modal { background:var(--bg3); border:1px solid var(--gold-dim); border-radius:16px; padding:24px; width:100%; max-width:420px; }
+  .modal h2 { font-family:'Cormorant Garamond',serif; color:var(--gold); font-size:22px; margin-bottom:16px; }
+  .modal p { font-size:14px; color:var(--muted); line-height:1.6; margin-bottom:14px; }
+  .modal textarea { min-height:120px; font-size:12px; font-family:monospace; }
+  .modal-btns { display:flex; gap:10px; margin-top:14px; }
+  .modal-btns button { flex:1; padding:11px; border-radius:9px; font-family:'Lato',sans-serif; font-size:13px; font-weight:700; cursor:pointer; border:none; }
+  .btn-gold { background:linear-gradient(135deg,var(--gold),#a07840); color:var(--bg); }
+  .btn-ghost { background:var(--bg); border:1px solid var(--gold-faint) !important; color:var(--text); }
+  /* install banner */
+  .install-banner { background:#1a1408; border:1px solid var(--gold-dim); border-radius:12px; padding:14px 16px; margin-bottom:14px; font-size:13px; line-height:1.7; color:var(--text); }
+  .install-banner strong { color:var(--gold); }
+  .install-banner .close-banner { float:right; background:none; border:none; color:var(--muted); font-size:16px; cursor:pointer; margin-top:-2px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="header-left">
+      <div class="header-label">Your Best Year</div>
+      <div class="header-date" id="today-date"></div>
+    </div>
+    <div class="header-right">
+      <button class="icon-btn" onclick="showExport()" title="Backup data">💾</button>
+      <button class="icon-btn" onclick="showImport()" title="Restore data">📂</button>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <button class="nav-btn active" data-tab="daily" onclick="switchTab('daily')">📋 Today</button>
+    <button class="nav-btn" data-tab="goals" onclick="switchTab('goals')">🎯 Goals</button>
+    <button class="nav-btn" data-tab="wheel" onclick="switchTab('wheel')">🔮 Wheel</button>
+    <button class="nav-btn" data-tab="coach" onclick="switchTab('coach')">💬 Coach</button>
+  </nav>
+
+  <div class="scroll-area" id="scroll-area">
+
+    <!-- DAILY -->
+    <div class="tab-section active" id="tab-daily">
+      <div id="install-banner" class="install-banner" style="display:none">
+        <button class="close-banner" onclick="dismissBanner()">✕</button>
+        <strong>📱 Save to your home screen</strong><br>
+        <strong>iPhone:</strong> Tap Share → "Add to Home Screen"<br>
+        <strong>Android:</strong> Tap ⋮ → "Add to Home screen"<br>
+        Then open the <strong>💾 backup button</strong> regularly to save your data.
+      </div>
+      <div class="card">
+        <div class="card-title">⚡ Quick List — Top 3 Goals Right Now</div>
+        <div class="card-hint">Allow 30 seconds. What matters most today?</div>
+        <input type="text" id="dg0" placeholder="Goal 1..." oninput="saveDayField('goals',0,this.value)">
+        <input type="text" id="dg1" placeholder="Goal 2..." oninput="saveDayField('goals',1,this.value)">
+        <input type="text" id="dg2" placeholder="Goal 3..." oninput="saveDayField('goals',2,this.value)">
+      </div>
+      <div class="card">
+        <div class="card-title">✅ Action Steps Today</div>
+        <div class="card-hint">What will you do today to move forward?</div>
+        <div id="actions-list"></div>
+        <div class="progress-text" id="progress-text">0/0 completed</div>
+      </div>
+      <div class="card">
+        <div class="card-title">🧱 Today's Obstacle</div>
+        <input type="text" id="obstacle" placeholder="What's standing in your way today?" oninput="saveDay('obstacle',this.value)">
+        <div class="card-title" style="margin-top:14px">💡 Sentence Completion</div>
+        <div class="card-hint">"I could overcome this if..." — write 5 ideas</div>
+        <input type="text" id="sc0" placeholder="Idea 1..." oninput="saveDayField('sentence',0,this.value)">
+        <input type="text" id="sc1" placeholder="Idea 2..." oninput="saveDayField('sentence',1,this.value)">
+        <input type="text" id="sc2" placeholder="Idea 3..." oninput="saveDayField('sentence',2,this.value)">
+        <input type="text" id="sc3" placeholder="Idea 4..." oninput="saveDayField('sentence',3,this.value)">
+        <input type="text" id="sc4" placeholder="Idea 5..." oninput="saveDayField('sentence',4,this.value)">
+      </div>
+      <div class="card">
+        <div class="card-title">🎁 Today's Reward</div>
+        <input type="text" id="reward" placeholder="What will you give yourself after your actions?" oninput="saveDay('reward',this.value)">
+      </div>
+      <p class="quote">"Better to get a stiff neck from aiming too high than a hunchback from aiming too low."<cite>— Jacques Chancel</cite></p>
+    </div>
+
+    <!-- GOALS -->
+    <div class="tab-section" id="tab-goals">
+      <div class="card">
+        <div class="card-title">🌟 Your Major Definite Purpose</div>
+        <div class="card-hint">The one goal — if you knew you were guaranteed success.</div>
+        <textarea id="major-goal" placeholder="Write it in present tense: 'I now have / I am / I earn...'" oninput="saveGoals()"></textarea>
+      </div>
+      <div class="card">
+        <div class="card-title">🎯 Top 3 Goals</div>
+        <div class="card-hint">Clear, specific, present tense.</div>
+        <input type="text" id="g0" placeholder="Goal 1..." oninput="saveGoals()">
+        <input type="text" id="g1" placeholder="Goal 2..." oninput="saveGoals()">
+        <input type="text" id="g2" placeholder="Goal 3..." oninput="saveGoals()">
+      </div>
+      <div class="card">
+        <div class="card-title">💎 Your Top 5 Values</div>
+        <div class="card-hint">What matters most to you in life?</div>
+        <input type="text" id="v0" placeholder="Value 1..." oninput="saveGoals()">
+        <input type="text" id="v1" placeholder="Value 2..." oninput="saveGoals()">
+        <input type="text" id="v2" placeholder="Value 3..." oninput="saveGoals()">
+        <input type="text" id="v3" placeholder="Value 4..." oninput="saveGoals()">
+        <input type="text" id="v4" placeholder="Value 5..." oninput="saveGoals()">
+      </div>
+    </div>
+
+    <!-- WHEEL -->
+    <div class="tab-section" id="tab-wheel">
+      <div class="card">
+        <div class="card-title">🔮 Wheel of Life</div>
+        <div class="card-hint">Rate yourself 1–10. Be honest.</div>
+        <div id="sliders"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📊 Balance at a Glance</div>
+        <div id="bars"></div>
+        <p style="color:var(--muted);font-size:13px;font-style:italic;margin-top:14px">Overall average: <span id="avg-score" style="color:var(--gold)">5.0</span>/10</p>
+      </div>
+    </div>
+
+    <!-- COACH -->
+    <div class="tab-section" id="tab-coach">
+      <div class="card" id="suggestions-card">
+        <div class="card-title">💬 Your Goal Coach</div>
+        <div class="card-hint" style="margin-bottom:14px">Ask anything — break through obstacles, think bigger, stay on track.</div>
+        <div class="suggestions">
+          <button class="suggestion-btn" onclick="fillChat(this.textContent)">Help me get clear on my major goal</button>
+          <button class="suggestion-btn" onclick="fillChat(this.textContent)">I'm struggling to stay motivated</button>
+          <button class="suggestion-btn" onclick="fillChat(this.textContent)">What action should I take today?</button>
+          <button class="suggestion-btn" onclick="fillChat(this.textContent)">Help me with sentence completion for my obstacle</button>
+        </div>
+      </div>
+      <div class="chat-messages" id="chat-messages"></div>
+    </div>
+
+  </div><!-- end scroll -->
+
+  <div class="chat-bar" id="chat-bar" style="display:none">
+    <input type="text" id="chat-input" placeholder="Ask your coach..." onkeydown="if(event.key==='Enter')sendChat()">
+    <button class="send-btn" id="send-btn" onclick="sendChat()">Send</button>
+  </div>
+</div>
+
+<!-- EXPORT MODAL -->
+<div class="modal-bg" id="export-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal">
+    <h2>💾 Backup Your Data</h2>
+    <p>Copy all this text and save it somewhere safe (Notes app, email to yourself). Use it to restore your data later.</p>
+    <textarea id="export-text" readonly onclick="this.select()"></textarea>
+    <div class="modal-btns">
+      <button class="btn-gold" onclick="copyExport()">Copy All</button>
+      <button class="btn-ghost" onclick="document.getElementById('export-modal').style.display='none'">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT MODAL -->
+<div class="modal-bg" id="import-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal">
+    <h2>📂 Restore Data</h2>
+    <p>Paste your previously backed-up data below and tap Restore.</p>
+    <textarea id="import-text" placeholder="Paste backup text here..."></textarea>
+    <div class="modal-btns">
+      <button class="btn-gold" onclick="doImport()">Restore</button>
+      <button class="btn-ghost" onclick="document.getElementById('import-modal').style.display='none'">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const LIFE_AREAS = [
+  {key:"peace",label:"Peace of Mind",icon:"☁️"},
+  {key:"goals",label:"Clear Goals",icon:"🎯"},
+  {key:"finance",label:"Financial Freedom",icon:"💎"},
+  {key:"relationships",label:"Happy Relationships",icon:"❤️"},
+  {key:"self",label:"Self Knowledge",icon:"🔍"},
+  {key:"health",label:"Health & Energy",icon:"⚡"},
+  {key:"fulfilment",label:"Fulfilment",icon:"✨"},
+];
+
+// ── STORAGE: tries localStorage, falls back to in-memory, always dual-writes ──
+const MEM = {};
+function lsSet(k, v) {
+  MEM[k] = v;
+  try { localStorage.setItem(k, v); } catch(e) {}
+  try { sessionStorage.setItem(k, v); } catch(e) {}
+}
+function lsGet(k) {
+  if (MEM[k] !== undefined) return MEM[k];
+  try { const v = localStorage.getItem(k); if (v) { MEM[k]=v; return v; } } catch(e) {}
+  try { const v = sessionStorage.getItem(k); if (v) { MEM[k]=v; return v; } } catch(e) {}
+  return null;
+}
+
+function todayKey() { return new Date().toISOString().split("T")[0]; }
+
+function makeDefault() {
+  return {
+    goals:{major:"",top3:["","",""],values:["","","","",""]},
+    wheel:{peace:5,goals:5,finance:5,relationships:5,self:5,health:5,fulfilment:5},
+    daily:{},
+  };
+}
+
+function loadData() {
+  try { const v=lsGet("bestyr-data"); return v ? JSON.parse(v) : makeDefault(); }
+  catch { return makeDefault(); }
+}
+
+function getDay(d) {
+  const k = todayKey();
+  if (!d.daily[k]) d.daily[k]={goals:["","",""],actions:["","","","",""],obstacle:"",reward:"",sentence:["","","","",""],done:[]};
+  return d.daily[k];
+}
+
+function persist(d) {
+  try { lsSet("bestyr-data", JSON.stringify(d)); } catch(e) {}
+}
+
+let DATA = loadData();
+let chatHistory = [];
+try { const c=lsGet("bestyr-chat"); if(c) chatHistory=JSON.parse(c); } catch {}
+
+// Save on page hide (tab switch, phone lock, etc.)
+document.addEventListener("visibilitychange", () => { if (document.hidden) persist(DATA); });
+window.addEventListener("pagehide", () => persist(DATA));
+window.addEventListener("beforeunload", () => persist(DATA));
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+document.getElementById("today-date").textContent = new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
+
+// Show install banner if not dismissed
+if (!lsGet("bestyr-banner-dismissed")) {
+  document.getElementById("install-banner").style.display = "block";
+}
+
+function dismissBanner() {
+  document.getElementById("install-banner").style.display = "none";
+  lsSet("bestyr-banner-dismissed","1");
+}
+
+function init() {
+  renderSliders(); renderBars(); renderActions(); populateGoals(); populateDaily(); renderChat();
+}
+
+// ── TAB ───────────────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll(".tab-section").forEach(s=>s.classList.remove("active"));
+  document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
+  document.getElementById("tab-"+tab).classList.add("active");
+  document.querySelector(`[data-tab="${tab}"]`).classList.add("active");
+  document.getElementById("chat-bar").style.display = tab==="coach" ? "flex" : "none";
+  document.getElementById("scroll-area").scrollTop = 0;
+}
+
+// ── DAILY ─────────────────────────────────────────────────────────────────────
+function populateDaily() {
+  const day = getDay(DATA);
+  ["dg0","dg1","dg2"].forEach((id,i)=>{ document.getElementById(id).value=day.goals[i]||""; });
+  ["sc0","sc1","sc2","sc3","sc4"].forEach((id,i)=>{ document.getElementById(id).value=(day.sentence||[])[i]||""; });
+  document.getElementById("obstacle").value = day.obstacle||"";
+  document.getElementById("reward").value = day.reward||"";
+}
+
+function saveDay(field,val) { const d=getDay(DATA); d[field]=val; persist(DATA); }
+
+function saveDayField(field,idx,val) {
+  const d=getDay(DATA);
+  if(!d[field]) d[field]=[];
+  d[field][idx]=val;
+  persist(DATA);
+}
+
+function renderActions() {
+  const day=getDay(DATA);
+  const list=document.getElementById("actions-list");
+  list.innerHTML="";
+  for(let i=0;i<5;i++) {
+    const done=(day.done||[]).includes(i);
+    const row=document.createElement("div");
+    row.className="action-row";
+    const val=(day.actions[i]||"").replace(/"/g,"&quot;");
+    row.innerHTML=`<div class="check-box ${done?"checked":""}" onclick="toggleDone(${i})">${done?"✓":""}</div><input type="text" class="${done?"done":""}" placeholder="Action ${i+1}..." value="${val}" oninput="saveDayField('actions',${i},this.value)">`;
+    list.appendChild(row);
+  }
+  updateProgress();
+}
+
+function toggleDone(idx) {
+  const day=getDay(DATA);
+  const done=day.done||[];
+  const had=done.includes(idx);
+  day.done=had?done.filter(i=>i!==idx):[...done,idx];
+  persist(DATA); renderActions();
+  if(!had) showToast("Action completed! 🎉");
+}
+
+function updateProgress() {
+  const day=getDay(DATA);
+  const total=(day.actions||[]).filter(Boolean).length;
+  const done=(day.done||[]).length;
+  document.getElementById("progress-text").textContent=`${done}/${total} completed`;
+}
+
+// ── GOALS ─────────────────────────────────────────────────────────────────────
+function populateGoals() {
+  document.getElementById("major-goal").value=DATA.goals.major||"";
+  ["g0","g1","g2"].forEach((id,i)=>document.getElementById(id).value=DATA.goals.top3[i]||"");
+  ["v0","v1","v2","v3","v4"].forEach((id,i)=>document.getElementById(id).value=DATA.goals.values[i]||"");
+}
+
+function saveGoals() {
+  DATA.goals.major=document.getElementById("major-goal").value;
+  DATA.goals.top3=["g0","g1","g2"].map(id=>document.getElementById(id).value);
+  DATA.goals.values=["v0","v1","v2","v3","v4"].map(id=>document.getElementById(id).value);
+  persist(DATA);
+}
+
+// ── WHEEL ─────────────────────────────────────────────────────────────────────
+function renderSliders() {
+  const wrap=document.getElementById("sliders"); wrap.innerHTML="";
+  LIFE_AREAS.forEach(area=>{
+    const val=DATA.wheel[area.key]||5;
+    const div=document.createElement("div"); div.className="slider-wrap";
+    div.innerHTML=`<div class="slider-label"><span class="slider-name">${area.icon} ${area.label}</span><span class="slider-val" id="sv-${area.key}">${val}</span></div><input type="range" min="1" max="10" value="${val}" oninput="updateWheel('${area.key}',+this.value)">`;
+    wrap.appendChild(div);
+  });
+}
+
+function renderBars() {
+  const wrap=document.getElementById("bars"); wrap.innerHTML="";
+  let total=0;
+  LIFE_AREAS.forEach(area=>{
+    const val=DATA.wheel[area.key]||5; total+=val;
+    const div=document.createElement("div");
+    div.innerHTML=`<div class="bar-row"><span>${area.icon} ${area.label}</span><span class="bar-score" id="bs-${area.key}">${val}/10</span></div><div class="bar-bg"><div class="bar-fill" id="bf-${area.key}" style="width:${val*10}%"></div></div>`;
+    wrap.appendChild(div);
+  });
+  document.getElementById("avg-score").textContent=(total/7).toFixed(1);
+}
+
+function updateWheel(key,val) {
+  DATA.wheel[key]=val; persist(DATA);
+  const sv=document.getElementById("sv-"+key); if(sv) sv.textContent=val;
+  const bs=document.getElementById("bs-"+key); if(bs) bs.textContent=val+"/10";
+  const bf=document.getElementById("bf-"+key); if(bf) bf.style.width=(val*10)+"%";
+  const total=Object.values(DATA.wheel).reduce((a,b)=>a+b,0);
+  document.getElementById("avg-score").textContent=(total/7).toFixed(1);
+}
+
+// ── BACKUP / RESTORE ──────────────────────────────────────────────────────────
+function showExport() {
+  const payload = JSON.stringify({data: DATA, chat: chatHistory, v:1}, null, 2);
+  document.getElementById("export-text").value = payload;
+  document.getElementById("export-modal").style.display = "flex";
+}
+
+function copyExport() {
+  const ta = document.getElementById("export-text");
+  ta.select();
+  try { document.execCommand("copy"); } catch {}
+  try { navigator.clipboard.writeText(ta.value); } catch {}
+  showToast("Copied! Save it somewhere safe 📋");
+}
+
+function showImport() {
+  document.getElementById("import-text").value = "";
+  document.getElementById("import-modal").style.display = "flex";
+}
+
+function doImport() {
+  try {
+    const raw = document.getElementById("import-text").value.trim();
+    const parsed = JSON.parse(raw);
+    if (parsed.data) {
+      DATA = parsed.data;
+      if (parsed.chat) chatHistory = parsed.chat;
+      persist(DATA);
+      lsSet("bestyr-chat", JSON.stringify(chatHistory));
+      document.getElementById("import-modal").style.display = "none";
+      init();
+      showToast("Data restored! ✅");
+    } else { alert("Invalid backup — make sure you copied the full text."); }
+  } catch { alert("Couldn't read that. Make sure you pasted the complete backup text."); }
+}
+
+// ── COACH ─────────────────────────────────────────────────────────────────────
+const SYSTEM=`You are an encouraging, insightful goal-achievement coach based on the "How to Make Your Best Year" framework. You know these 10 principles:
+1. Write goals in present tense as if achieved
+2. Identify benefits
+3. Set deadlines
+4. Name obstacles (internal & external)
+5. Identify skills needed
+6. Use sentence completion creativity ("I could... if...")
+7. Identify help needed
+8. Write action steps
+9. Take action daily
+10. Use rewards and visualisation
+The 7 life areas: Peace of Mind, Clear Goals, Financial Freedom, Happy Relationships, Self Knowledge, Health & Energy, Fulfilment.
+Be warm, direct, specific. Ask one powerful question at a time. Keep responses to 2-4 sentences unless a detailed breakdown is needed. Never be generic.`;
+
+function getContext() {
+  const day=getDay(DATA);
+  return `User — Major goal: "${DATA.goals.major}". Top 3 goals: ${DATA.goals.top3.filter(Boolean).join("; ")||"not set"}. Values: ${DATA.goals.values.filter(Boolean).join(", ")||"not set"}. Today's obstacle: "${day.obstacle}". Today's actions: ${(day.actions||[]).filter(Boolean).join("; ")||"none yet"}.`;
+}
+
+function renderChat() {
+  const wrap=document.getElementById("chat-messages"); wrap.innerHTML="";
+  chatHistory.forEach(m=>addBubble(m.role,m.content,false));
+  if(chatHistory.length>0) { const sc=document.getElementById("suggestions-card"); if(sc) sc.style.display="none"; }
+}
+
+function addBubble(role,content,animate=true) {
+  const wrap=document.getElementById("chat-messages");
+  const div=document.createElement("div"); div.className=`bubble ${role}`;
+  if(!animate) div.style.animation="none";
+  div.textContent=content; wrap.appendChild(div);
+  div.scrollIntoView({behavior:"smooth",block:"end"});
+  if(chatHistory.length>0) { const sc=document.getElementById("suggestions-card"); if(sc) sc.style.display="none"; }
+}
+
+function fillChat(text) { document.getElementById("chat-input").value=text; document.getElementById("chat-input").focus(); }
+
+async function sendChat() {
+  const input=document.getElementById("chat-input");
+  const btn=document.getElementById("send-btn");
+  const text=input.value.trim(); if(!text) return;
+  input.value=""; btn.disabled=true; btn.textContent="...";
+  chatHistory.push({role:"user",content:text});
+  addBubble("user",text);
+  const typing=document.createElement("div"); typing.className="bubble assistant typing"; typing.textContent="thinking...";
+  document.getElementById("chat-messages").appendChild(typing); typing.scrollIntoView({behavior:"smooth",block:"end"});
+  const ctx=getContext();
+  const messages=[
+    {role:"user",content:ctx},
+    {role:"assistant",content:"Got it, I have your goals and plan in mind."},
+    ...chatHistory.slice(0,-1).slice(-20),
+    {role:"user",content:text}
+  ];
+  try {
+    const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,system:SYSTEM,messages})});
+    const data=await res.json();
+    const reply=(data.content||[]).map(b=>b.text||"").join("")||"Let's keep going.";
+    typing.remove(); chatHistory.push({role:"assistant",content:reply});
+    addBubble("assistant",reply);
+    lsSet("bestyr-chat",JSON.stringify(chatHistory.slice(-40)));
+  } catch { typing.remove(); addBubble("assistant","Connection issue — try again."); }
+  btn.disabled=false; btn.textContent="Send";
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t=document.getElementById("toast"); t.textContent=msg; t.style.display="block";
+  setTimeout(()=>{ t.style.display="none"; },2500);
+}
+
+init();
+</script>
+</body>
+</html>
