@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#080E1A"/>
+<title>💰 Budget Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#080E1A;color:#E2E8F0;font-family:'DM Sans',sans-serif;overflow:hidden}
+#app{height:100dvh;max-width:430px;margin:0 auto;display:flex;flex-direction:column;position:relative;opacity:0;transition:opacity .4s}
+.scroll{flex:1;overflow-y:auto;padding-bottom:80px}
+.scroll::-webkit-scrollbar{display:none}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(16px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.section{animation:fadeIn .25s ease}
+.fab{position:fixed;bottom:80px;right:20px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#4F8EF7,#4FD98E);border:none;cursor:pointer;z-index:40;font-size:28px;color:#fff;box-shadow:0 4px 20px rgba(79,142,247,.4);display:flex;align-items:center;justify-content:center}
+.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:rgba(8,14,26,.95);backdrop-filter:blur(12px);border-top:1px solid #1E293B;display:flex;padding-bottom:env(safe-area-inset-bottom);z-index:30}
+.nav-btn{background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 0;flex:1}
+.pill{background:none;border:1px solid #1E293B;cursor:pointer;padding:6px 14px;border-radius:99px;font-family:'DM Mono',monospace;font-size:11px;transition:all .2s;white-space:nowrap;color:#475569}
+.pill.on{border-color:#4F8EF7;color:#4F8EF7;background:rgba(79,142,247,.1)}
+.mpill{background:none;border:1px solid #1E293B;cursor:pointer;padding:5px 10px;border-radius:8px;font-family:'DM Mono',monospace;font-size:10px;white-space:nowrap;color:#475569}
+.mpill.on{border-color:#FACC15;color:#FACC15;background:rgba(250,204,21,.1)}
+.sheet{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.8);backdrop-filter:blur(4px);display:flex;align-items:flex-end}
+.sheet-inner{width:100%;background:#0D1829;border-radius:20px 20px 0 0;border:1px solid #1E293B;border-bottom:none;animation:slideUp .25s ease;max-height:92vh;display:flex;flex-direction:column}
+.handle{display:flex;justify-content:center;padding:12px 0 4px;flex-shrink:0}
+.handle-bar{width:36px;height:4px;border-radius:99px;background:#1E293B}
+.sheet-body{overflow-y:auto;padding:8px 20px 44px;flex:1}
+.sheet-body::-webkit-scrollbar{display:none}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.key{padding:18px 0;border-radius:12px;border:none;cursor:pointer;font-size:20px;font-family:'Syne',sans-serif;font-weight:700}
+.btn-main{width:100%;padding:16px 0;border-radius:14px;border:none;cursor:pointer;font-family:'Syne',sans-serif;font-weight:700;font-size:16px}
+.cat-list{max-height:52vh;overflow-y:auto}
+.cat-list::-webkit-scrollbar{display:none}
+.cat-btn{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;border:none;cursor:pointer;width:100%;text-align:left;margin-bottom:4px}
+.card{border-radius:12px;padding:12px 14px;background:rgba(255,255,255,.03);border:1px solid #1E293B;margin-bottom:6px}
+.pbar-wrap{background:rgba(255,255,255,.07);border-radius:99px;height:5px;overflow:hidden;flex:1}
+.pbar{height:100%;border-radius:99px;transition:width .6s ease}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#1E293B;border:1px solid #334155;border-radius:12px;padding:10px 18px;font-family:'DM Mono',monospace;font-size:12px;white-space:nowrap;z-index:200;animation:toastIn .25s ease;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+.drop-zone{border:2px dashed #1E293B;border-radius:16px;padding:28px 20px;text-align:center;margin-bottom:16px;transition:all .2s}
+.drop-zone.drag{border-color:#4F8EF7;background:rgba(79,142,247,.05)}
+input[type=file]{display:none}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="scroll" id="scroll"></div>
+  <button class="fab" onclick="setState({showLog:true})">+</button>
+  <nav class="nav" id="nav"></nav>
+</div>
+<script>
+const CATS=[
+  {n:"Mortgage",i:"🏠",g:"Housing",b:2200,c:"#4F8EF7",k:["mortgage","home loan"]},
+  {n:"Home Maintenance",i:"🔧",g:"Housing",b:150,c:"#6BA3F9",k:["bunnings","mitre","hardware","maintenance","repair","plumb","electri"]},
+  {n:"Home Insurance",i:"🛡️",g:"Housing",b:120,c:"#89B8FB",k:["home insurance","house insurance","ami home","state home"]},
+  {n:"Contents Insurance",i:"📦",g:"Housing",b:60,c:"#A7CCFC",k:["contents insurance"]},
+  {n:"Vehicle Insurance (Corolla)",i:"🚗",g:"Transport",b:100,c:"#F97B4F",k:["vehicle insurance","car insurance","aa insurance","corolla"]},
+  {n:"Vehicle Insurance (Hiace)",i:"🚐",g:"Transport",b:120,c:"#FB9A76",k:["hiace","van insurance"]},
+  {n:"Life Insurance",i:"❤️",g:"Insurance",b:80,c:"#F94F8E",k:["life insurance","aia","partners life","cigna","asteron"]},
+  {n:"Groceries",i:"🛒",g:"Food",b:600,c:"#4FD98E",k:["countdown","paknsave","pak n save","new world","fresh choice","four square","supermarket","grocery"]},
+  {n:"Dining & Takeaways",i:"🍜",g:"Food",b:200,c:"#7BE8A8",k:["mcdonald","kfc","subway","domino","pizza","cafe","restaurant","takeaway","uber eats","delivereasy"]},
+  {n:"Fuel",i:"⛽",g:"Transport",b:200,c:"#FBB476",k:["z energy","bp ","mobil","gull","waitomo","fuel","petrol"]},
+  {n:"Vehicle Maintenance (Corolla)",i:"🔩",g:"Transport",b:80,c:"#FCC897",k:["wof","warrant","rego","registration","repco","supercheap"]},
+  {n:"Vehicle Maintenance (Hiace)",i:"⚙️",g:"Transport",b:80,c:"#FDDCB8",k:["mechanic","service","tyres","tyre"]},
+  {n:"Tool Purchase",i:"🪛",g:"Misc",b:50,c:"#C084FC",k:["tool","trade tools","dewalt","makita"]},
+  {n:"Power",i:"⚡",g:"Utilities",b:180,c:"#FACC15",k:["genesis","mercury energy","contact energy","meridian","electric kiwi","flick","electricity"]},
+  {n:"Water",i:"💧",g:"Utilities",b:60,c:"#67E8F9",k:["watercare","water rates"]},
+  {n:"Internet",i:"📡",g:"Utilities",b:90,c:"#38BDF8",k:["spark","2degrees","one nz","vodafone","orcon","bigpipe","trustpower","slingshot","broadband"]},
+  {n:"Mobile Phone",i:"📱",g:"Utilities",b:60,c:"#7DD3FC",k:["mobile","phone plan","prepay"]},
+  {n:"Google Subscription",i:"🔍",g:"Subscriptions",b:5,c:"#86EFAC",k:["google","youtube premium"]},
+  {n:"Sodaly Subscription",i:"🎵",g:"Subscriptions",b:20,c:"#6EE7B7",k:["sodaly","spotify","apple music","netflix","disney","neon","prime video"]},
+  {n:"Entertainment",i:"🎬",g:"Lifestyle",b:80,c:"#A78BFA",k:["event cinema","hoyts","reading cinema","concert","ticketek","ticketmaster"]},
+  {n:"Health & Medical",i:"🏥",g:"Lifestyle",b:100,c:"#F472B6",k:["doctor","medical","pharmacy","chemist","dentist","physio","health"]},
+  {n:"Shopping / Clothing",i:"👗",g:"Lifestyle",b:100,c:"#FB7185",k:["kmart","the warehouse","cotton on","glassons","hallenstein","farmers"]},
+  {n:"School Expenses",i:"📚",g:"Family",b:150,c:"#34D399",k:["school","stationery","whitcoulls","paper plus","uniform"]},
+  {n:"Extra-curricular Activities",i:"⚽",g:"Family",b:150,c:"#4ADE80",k:["sport","swim","football","rugby","dance","music lesson"]},
+  {n:"Gifts",i:"🎁",g:"Family",b:100,c:"#F9A8D4",k:["gift","present","flower","birthday"]},
+];
+const GC={Housing:"#4F8EF7",Transport:"#F97B4F",Insurance:"#F94F8E",Food:"#4FD98E",Utilities:"#FACC15",Subscriptions:"#86EFAC",Lifestyle:"#A78BFA",Family:"#34D399",Misc:"#C084FC"};
+const INCOME=5200;
+const fmt=n=>`$${Math.abs(n).toLocaleString("en-NZ",{minimumFractionDigits:0,maximumFractionDigits:0})}`;
+const autoCat=desc=>{const l=(desc||"").toLowerCase();for(const c of CATS)for(const k of c.k)if(l.includes(k))return c.n;return null;};
+
+// ── CSV Parsing ───────────────────────────────────────────────────────────────
+function detectBank(raw){
+  const h=raw.split("\n")[0].toLowerCase();
+  if(h.includes("particulars")||h.includes("code,reference"))return"kiwibank";
+  if(h.includes("details")||h.includes("serial"))return"anz";
+  return"generic";
+}
+function smartSplit(line){
+  const r=[];let cur="",q=false;
+  for(const c of line){if(c==='"'){q=!q;continue;}if(c===','&&!q){r.push(cur.trim());cur="";}else cur+=c;}
+  r.push(cur.trim());return r;
+}
+function parseDate(s){
+  if(!s)return null;s=s.trim();
+  let m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(m)return new Date(+m[3],+m[2]-1,+m[1]);
+  m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(m)return new Date(+m[1],+m[2]-1,+m[3]);
+  return null;
+}
+function parseCSVFile(raw,filename){
+  const bank=detectBank(raw);
+  const lines=raw.trim().split("\n").filter(l=>l.trim());
+  const txns=[];
+  for(let i=1;i<lines.length;i++){
+    const row=smartSplit(lines[i]);
+    let date=null,desc="",amount=0;
+    if(bank==="kiwibank"){
+      date=parseDate(row[0]);
+      amount=parseFloat((row[1]||"0").replace(/[^-\d.]/g,""))||0;
+      desc=[row[2],row[3],row[4]].filter(Boolean).join(" ").trim();
+    }else if(bank==="anz"){
+      date=parseDate(row[0]);
+      desc=row[1]||"";
+      amount=parseFloat((row[2]||"0").replace(/[^-\d.]/g,""))||0;
+    }else{
+      date=parseDate(row[0]);
+      amount=parseFloat((row[row.length-1]||"0").replace(/[^-\d.]/g,""))||0;
+      desc=row.slice(1,-1).join(" ").trim();
+    }
+    if(!date||isNaN(amount)||amount>=0)continue;
+    txns.push({
+      id:`${date.getTime()}-${Math.random()}`,date,
+      month:`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}`,
+      description:desc,amount:Math.abs(amount),
+      category:autoCat(desc),
+      bank:filename.toLowerCase().includes("anz")?"ANZ":"Kiwibank"
+    });
+  }
+  return txns;
+}
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let state={
+  tab:"home",transactions:[],manualSpend:{},
+  activeGroup:"All",selMonth:null,
+  seedTarget:10000,seedSaved:0,
+  showLog:false,showImport:false,
+  logStep:"amount",logAmount:"",logCat:null,
+  toast:null,toastTimer:null,
+  importFiles:[],importPreview:null,importDrag:false,
+};
+function setState(patch){Object.assign(state,typeof patch==="function"?patch(state):patch);render();}
+function showToast(msg){clearTimeout(state.toastTimer);const t=setTimeout(()=>setState({toast:null}),3000);setState({toast:msg,toastTimer:t});}
+
+// ── Derived ───────────────────────────────────────────────────────────────────
+function derived(){
+  const{transactions,manualSpend,selMonth}=state;
+  const months=[...new Set(transactions.map(t=>t.month))].sort();
+  const curMonth=selMonth||months[months.length-1];
+  const monthTxns=transactions.filter(t=>!curMonth||t.month===curMonth);
+  const spend={};
+  for(const cat of CATS)spend[cat.n]=monthTxns.filter(t=>t.category===cat.n).reduce((s,t)=>s+t.amount,0)+(manualSpend[cat.n]||0);
+  const totalSpend=Object.values(spend).reduce((a,b)=>a+b,0);
+  const totalBudgeted=CATS.reduce((a,c)=>a+c.b,0);
+  const netSavings=INCOME-totalSpend;
+  const uncategorised=monthTxns.filter(t=>!t.category);
+  const topLeaks=CATS.map(c=>({...c,over:spend[c.n]-c.b})).filter(c=>c.over>0).sort((a,b)=>b.over-a.over).slice(0,3);
+  const trendData=months.slice(-6).map(m=>{
+    const exp=transactions.filter(t=>t.month===m).reduce((s,t)=>s+t.amount,0);
+    return{label:new Date(m+"-01").toLocaleDateString("en-NZ",{month:"short"}),income:INCOME,exp:Math.round(exp)};
+  });
+  return{months,curMonth,monthTxns,spend,totalSpend,totalBudgeted,netSavings,uncategorised,topLeaks,trendData};
+}
+
+// ── SVG Charts ────────────────────────────────────────────────────────────────
+function barChart(data,W,H){
+  if(!data.length)return"";
+  const P={t:4,r:8,b:24,l:44},cw=W-P.l-P.r,ch=H-P.t-P.b;
+  const maxVal=Math.max(...data.map(d=>Math.max(d.income,d.exp)),1);
+  const bw=Math.floor(cw/data.length*.35),gap=Math.floor(cw/data.length*.08);
+  const x0=i=>P.l+i*(cw/data.length)+cw/data.length*.13;
+  const yS=v=>ch-(v/maxVal)*ch;
+  let svg=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px">`;
+  for(const t of[0,.25,.5,.75,1].map(f=>Math.round(maxVal*f/500)*500)){
+    const y=P.t+yS(t);
+    svg+=`<line x1="${P.l}" x2="${W-P.r}" y1="${y}" y2="${y}" stroke="#1E293B" stroke-width="1"/>`;
+    svg+=`<text x="${P.l-4}" y="${y+4}" text-anchor="end" fill="#475569" font-size="9" font-family="'DM Mono',monospace">$${t>=1000?(t/1000).toFixed(1)+"k":t}</text>`;
+  }
+  for(let i=0;i<data.length;i++){
+    const d=data[i],x=x0(i);
+    svg+=`<rect x="${x}" y="${P.t+yS(d.income)}" width="${bw}" height="${(d.income/maxVal)*ch}" rx="3" fill="#4FD98E" opacity=".6"/>`;
+    svg+=`<rect x="${x+bw+gap}" y="${P.t+yS(d.exp)}" width="${bw}" height="${(d.exp/maxVal)*ch}" rx="3" fill="#F97B4F"/>`;
+    svg+=`<text x="${x+bw}" y="${H-6}" text-anchor="middle" fill="#475569" font-size="9" font-family="'DM Mono',monospace">${d.label}</text>`;
+  }
+  return svg+"</svg>";
+}
+function donutChart(segs,W){
+  const R=W*.28,cx=W/2,cy=W/2,r=R*.68,total=segs.reduce((a,s)=>a+s.value,0)||1;
+  let angle=-Math.PI/2,svg=`<svg viewBox="0 0 ${W} ${W}" style="width:${W}px;height:${W}px">`;
+  for(const s of segs){
+    const sw=(s.value/total)*2*Math.PI;
+    const x1=cx+R*Math.cos(angle),y1=cy+R*Math.sin(angle);
+    const x2=cx+R*Math.cos(angle+sw),y2=cy+R*Math.sin(angle+sw);
+    const x3=cx+r*Math.cos(angle+sw),y3=cy+r*Math.sin(angle+sw);
+    const x4=cx+r*Math.cos(angle),y4=cy+r*Math.sin(angle);
+    if(sw>0.01)svg+=`<path d="M${x1},${y1} A${R},${R} 0 ${sw>Math.PI?1:0},1 ${x2},${y2} L${x3},${y3} A${r},${r} 0 ${sw>Math.PI?1:0},0 ${x4},${y4} Z" fill="${s.color}" opacity=".9"/>`;
+    angle+=sw;
+  }
+  return svg+"</svg>";
+}
+function progBar(pct,color){
+  const c=pct>100?"#EF4444":pct>80?"#F59E0B":color;
+  return`<div class="pbar-wrap"><div class="pbar" style="width:${Math.min(pct,100)}%;background:${c}"></div></div>`;
+}
+
+// ── Import Logic ──────────────────────────────────────────────────────────────
+async function handleFiles(files){
+  const allTxns=[],infos=[];
+  for(const f of files){
+    const text=await f.text();
+    const txns=parseCSVFile(text,f.name);
+    allTxns.push(...txns);
+    infos.push({name:f.name,bank:detectBank(text),count:txns.length});
+  }
+  allTxns.sort((a,b)=>a.date-b.date);
+  setState({importFiles:infos,importPreview:allTxns});
+}
+function doImport(){
+  const{importPreview,transactions}=state;
+  if(!importPreview)return;
+  const merged=[...transactions];
+  for(const t of importPreview)if(!merged.find(x=>x.id===t.id))merged.push(t);
+  setState({transactions:merged,showImport:false,importFiles:[],importPreview:null});
+  showToast(`✅ ${importPreview.length} transactions imported`);
+}
+
+// ── Log ───────────────────────────────────────────────────────────────────────
+function tapKey(k){
+  let a=state.logAmount;
+  if(k==="⌫"){setState({logAmount:a.slice(0,-1)});return;}
+  if(k==="."&&a.includes("."))return;
+  if(a.length>=7)return;
+  setState({logAmount:a+k});
+}
+function doLog(){
+  if(!state.logCat)return;
+  const amount=parseFloat(state.logAmount);
+  const c=CATS.find(x=>x.n===state.logCat);
+  setState(s=>({manualSpend:{...s.manualSpend,[s.logCat]:(s.manualSpend[s.logCat]||0)+amount},showLog:false,logAmount:"",logCat:null,logStep:"amount"}));
+  showToast(`${c.i} ${fmt(amount)} logged`);
+}
+
+// ── Render Sheets ─────────────────────────────────────────────────────────────
+function renderImportSheet(){
+  const{importFiles,importPreview,importDrag}=state;
+  const categorised=importPreview?importPreview.filter(t=>t.category).length:0;
+  const uncategorised=importPreview?importPreview.length-categorised:0;
+  return`<div class="sheet" onclick="if(event.target===this)setState({showImport:false})">
+  <div class="sheet-inner">
+    <div class="handle"><div class="handle-bar"></div></div>
+    <div class="sheet-body">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:17px;color:#F1F5F9">📂 Import CSV</div>
+        <button onclick="setState({showImport:false})" style="background:none;border:none;color:#475569;font-size:22px;cursor:pointer">✕</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+        <div style="background:#4F8EF710;border:1px solid #4F8EF730;border-radius:12px;padding:10px 12px">
+          <div style="font-size:12px;font-weight:700;color:#4F8EF7;margin-bottom:4px">Kiwibank</div>
+          <div style="font-size:10px;color:#64748B;line-height:1.4">Online Banking → Search/Export → CSV Basic</div>
+        </div>
+        <div style="background:#F97B4F10;border:1px solid #F97B4F30;border-radius:12px;padding:10px 12px">
+          <div style="font-size:12px;font-weight:700;color:#F97B4F;margin-bottom:4px">ANZ</div>
+          <div style="font-size:10px;color:#64748B;line-height:1.4">Internet Banking → Export → CSV with headers</div>
+        </div>
+      </div>
+
+      <div class="drop-zone${importDrag?' drag':''}" id="drop-zone"
+        ondragover="event.preventDefault();setState({importDrag:true})"
+        ondragleave="setState({importDrag:false})"
+        ondrop="event.preventDefault();setState({importDrag:false});handleFiles(Array.from(event.dataTransfer.files).filter(f=>f.name.endsWith('.csv')))">
+        <div style="font-size:32px;margin-bottom:8px">📄</div>
+        <div style="font-size:14px;color:#64748B;margin-bottom:12px">Drop CSV files here</div>
+        <label style="display:inline-block;padding:10px 20px;border-radius:10px;background:rgba(79,142,247,.15);border:1px solid #4F8EF740;color:#4F8EF7;font-size:13px;font-weight:600;cursor:pointer">
+          Browse Files
+          <input type="file" accept=".csv" multiple onchange="handleFiles(Array.from(this.files))"/>
+        </label>
+        <div style="font-size:11px;color:#334155;margin-top:8px">Kiwibank &amp; ANZ · Multiple files OK · From Jan 2024</div>
+      </div>
+
+      ${importFiles.length>0?`<div style="margin-bottom:16px">${importFiles.map(f=>`
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;background:rgba(79,217,142,.05);border:1px solid rgba(79,217,142,.2);margin-bottom:6px">
+          <div style="font-size:18px">✅</div>
+          <div style="flex:1"><div style="font-size:12px;color:#E2E8F0">${f.name}</div><div style="font-size:11px;color:#475569">${f.bank} · ${f.count} transactions</div></div>
+        </div>`).join("")}</div>`:""}
+
+      ${importPreview&&importPreview.length>0?`
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
+          ${[{l:"TRANSACTIONS",v:importPreview.length,c:"#4F8EF7"},{l:"AUTO-MATCHED",v:categorised,c:"#4FD98E"},{l:"NEEDS REVIEW",v:uncategorised,c:"#F59E0B"}].map(s=>`
+            <div style="background:#0A1220;border-radius:10px;padding:10px 12px;border:1px solid #1E293B">
+              <div style="font-size:9px;color:#475569;font-family:'DM Mono',monospace;margin-bottom:4px">${s.l}</div>
+              <div style="font-size:20px;font-family:'Syne',sans-serif;font-weight:800;color:${s.c}">${s.v}</div>
+            </div>`).join("")}
+        </div>
+        <div style="margin-bottom:16px">
+          <div style="font-size:11px;color:#475569;font-family:'DM Mono',monospace;margin-bottom:8px">PREVIEW (first 5)</div>
+          ${importPreview.slice(0,5).map(t=>`
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #0F1E35">
+              <div style="font-size:11px;color:#334155;font-family:'DM Mono',monospace;width:52px">${t.date.toLocaleDateString("en-NZ",{day:"2-digit",month:"short"})}</div>
+              <div style="flex:1;font-size:12px;color:#94A3B8;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${t.description.slice(0,26)}</div>
+              <div style="font-size:11px;color:${t.category?"#4FD98E":"#F59E0B"};font-family:'DM Mono',monospace;white-space:nowrap">${t.category?CATS.find(c=>c.n===t.category)?.i+" "+t.category.slice(0,10):"⚠ unmatched"}</div>
+              <div style="font-size:12px;color:#E2E8F0;font-family:'DM Mono',monospace;min-width:44px;text-align:right">${fmt(t.amount)}</div>
+            </div>`).join("")}
+        </div>
+        <button class="btn-main" onclick="doImport()" style="background:linear-gradient(135deg,#4F8EF7,#4FD98E);color:#fff">Import ${importPreview.length} Transactions ✓</button>
+      `:""}
+    </div>
+  </div>
+</div>`;
+}
+
+function renderLogSheet(){
+  const{logStep,logAmount,logCat}=state;
+  const hasAmt=logAmount&&parseFloat(logAmount)>0;
+  if(logStep==="amount")return`<div class="sheet" onclick="if(event.target===this)setState({showLog:false,logAmount:'',logCat:null,logStep:'amount'})">
+  <div class="sheet-inner">
+    <div class="handle"><div class="handle-bar"></div></div>
+    <div class="sheet-body">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:17px;color:#F1F5F9">Log Spend</div>
+        <button onclick="setState({showLog:false,logAmount:'',logCat:null,logStep:'amount'})" style="background:none;border:none;color:#475569;font-size:22px;cursor:pointer">✕</button>
+      </div>
+      <div style="text-align:center;margin-bottom:24px;font-family:'Syne',sans-serif;font-weight:800;font-size:${logAmount?52:36}px;color:${logAmount?"#F1F5F9":"#1E293B"};letter-spacing:-0.03em;min-height:64px;display:flex;align-items:center;justify-content:center">${logAmount?"$"+logAmount:"$0"}</div>
+      <div class="pad">${["1","2","3","4","5","6","7","8","9",".","0","⌫"].map(k=>`<button class="key" style="background:${k==="⌫"?"#1E293B":"rgba(255,255,255,.05)"};color:${k==="⌫"?"#94A3B8":"#E2E8F0"}" onclick="tapKey('${k}')">${k}</button>`).join("")}</div>
+      <button class="btn-main" style="background:${hasAmt?"linear-gradient(135deg,#4F8EF7,#4FD98E)":"#1E293B"};color:${hasAmt?"#fff":"#334155"}" onclick="${hasAmt?"setState({logStep:'category'})":"void 0"}">Next → Choose Category</button>
+    </div>
+  </div>
+</div>`;
+  return`<div class="sheet" onclick="if(event.target===this)setState({showLog:false,logAmount:'',logCat:null,logStep:'amount'})">
+  <div class="sheet-inner">
+    <div class="handle"><div class="handle-bar"></div></div>
+    <div class="sheet-body">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+        <button onclick="setState({logStep:'amount'})" style="background:none;border:none;color:#4F8EF7;font-size:22px;cursor:pointer">←</button>
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:17px;color:#F1F5F9">${fmt(parseFloat(logAmount))} — Where?</div>
+      </div>
+      <div class="cat-list">${CATS.map(c=>`<button class="cat-btn" style="background:${logCat===c.n?GC[c.g]+"20":"rgba(255,255,255,.03)"};border-left:3px solid ${logCat===c.n?GC[c.g]:"transparent"}" onclick="setState({logCat:'${c.n.replace(/'/g,"\\'")}'})">\
+        <span style="font-size:20px">${c.i}</span><div><div style="font-size:13px;color:#E2E8F0;font-weight:500">${c.n}</div><div style="font-size:11px;color:#475569">${c.g}</div></div></button>`).join("")}</div>
+      <button class="btn-main" style="margin-top:12px;background:${logCat?"linear-gradient(135deg,#4F8EF7,#4FD98E)":"#1E293B"};color:${logCat?"#fff":"#334155"}" onclick="doLog()">Log Spend ✓</button>
+    </div>
+  </div>
+</div>`;
+}
+
+// ── Pages ─────────────────────────────────────────────────────────────────────
+function renderHome(d){
+  const{months,curMonth,spend,totalSpend,totalBudgeted,netSavings,uncategorised,topLeaks,trendData}=d;
+  const{transactions,seedTarget,seedSaved}=state;
+  const seedPct=Math.min((seedSaved/seedTarget)*100,100),seedRem=seedTarget-seedSaved;
+  const seedMonths=netSavings>0?Math.ceil(seedRem/netSavings):null;
+  const byGroup={};for(const cat of CATS)byGroup[cat.g]=(byGroup[cat.g]||0)+spend[cat.n];
+  const pieSegs=Object.entries(byGroup).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([n,v])=>({name:n,value:v,color:GC[n]}));
+  const chartD=trendData.length>=2?trendData:[{label:"Nov",income:5200,exp:4320},{label:"Dec",income:5200,exp:5100},{label:"Jan",income:5200,exp:4680},{label:"Feb",income:5200,exp:4210},{label:"Mar",income:5200,exp:4890},{label:"Apr",income:5200,exp:4150}];
+  const W=Math.min(window.innerWidth,430)-40;
+  return`<div class="section">
+  <div style="padding:20px 20px 0;background:linear-gradient(180deg,#0D1829 0%,transparent 100%)">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div>
+        <div style="font-size:12px;color:#475569;font-family:'DM Mono',monospace;margin-bottom:4px">${curMonth?new Date(curMonth+"-01").toLocaleDateString("en-NZ",{month:"long",year:"numeric"}).toUpperCase():"NO DATA YET"}</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#F1F5F9">💰 Budget</div>
+      </div>
+      <button onclick="setState({showImport:true})" style="padding:7px 14px;border-radius:10px;border:1px solid #4F8EF740;background:rgba(79,142,247,.1);color:#4F8EF7;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer">📂 Import CSV</button>
+    </div>
+    ${months.length>1?`<div style="display:flex;gap:6px;overflow-x:auto;margin-top:12px;padding-bottom:4px">${months.map(m=>`<button class="mpill${curMonth===m?" on":""}" onclick="setState({selMonth:'${m}'})">${new Date(m+"-01").toLocaleDateString("en-NZ",{month:"short",year:"2-digit"})}</button>`).join("")}</div>`:""}
+    ${transactions.length>0
+      ?`<div style="margin-top:16px;padding:20px;border-radius:16px;background:${netSavings>=0?"linear-gradient(135deg,#4FD98E15,#4F8EF710)":"linear-gradient(135deg,#EF444415,#F97B4F10)"};border:1px solid ${netSavings>=0?"#4FD98E30":"#EF444430"}">
+          <div style="font-size:11px;color:#475569;font-family:'DM Mono',monospace;margin-bottom:6px">${netSavings>=0?"SAVED THIS MONTH":"OVER BUDGET"}</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:40px;letter-spacing:-0.03em;color:${netSavings>=0?"#4FD98E":"#EF4444"}">${netSavings>=0?"+":"-"}${fmt(netSavings)}</div>
+          <div style="font-size:12px;color:#475569;margin-top:4px">${Math.round(Math.abs(netSavings)/INCOME*100)}% of income · ${fmt(totalSpend)} spent of ${fmt(totalBudgeted)} budgeted</div>
+          <div style="margin-top:14px;background:rgba(255,255,255,.06);border-radius:99px;height:6px;overflow:hidden"><div style="width:${Math.min(totalSpend/totalBudgeted*100,100)}%;height:100%;background:${netSavings>=0?"linear-gradient(90deg,#4FD98E,#4F8EF7)":"#EF4444"};border-radius:99px;transition:width .8s ease"></div></div>
+        </div>`
+      :`<div style="margin-top:16px;padding:28px 20px;border-radius:16px;background:linear-gradient(135deg,#4F8EF710,#4FD98E08);border:1px dashed #4F8EF740;text-align:center">
+          <div style="font-size:32px;margin-bottom:10px">📂</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#F1F5F9;margin-bottom:6px">Import your bank CSVs</div>
+          <div style="font-size:13px;color:#475569;margin-bottom:16px;line-height:1.5">Download from Kiwibank &amp; ANZ online banking and import here. Start from Jan 2024.</div>
+          <button onclick="setState({showImport:true})" style="padding:12px 24px;border-radius:12px;border:none;background:linear-gradient(135deg,#4F8EF7,#4FD98E);color:#fff;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer">Import CSVs →</button>
+        </div>`}
+  </div>
+
+  ${pieSegs.length>0?`<div style="padding:16px 20px 0">
+    <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:#94A3B8;margin-bottom:8px">Spend by group</div>
+    <div style="display:flex;align-items:center">
+      ${donutChart(pieSegs,130)}
+      <div style="flex:1;display:flex;flex-direction:column;gap:5px;margin-left:12px">
+        ${pieSegs.slice(0,5).map(d=>`<div style="display:flex;align-items:center;gap:7px"><div style="width:7px;height:7px;border-radius:2px;background:${d.color};flex-shrink:0"></div><div style="font-size:12px;color:#94A3B8;flex:1">${d.name}</div><div style="font-size:12px;font-family:'DM Mono',monospace;color:#CBD5E1">${fmt(d.value)}</div></div>`).join("")}
+      </div>
+    </div>
+  </div>`:""}
+
+  ${topLeaks.length>0?`<div style="padding:16px 20px 0">
+    <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:#94A3B8;margin-bottom:8px">⚠ Over budget</div>
+    ${topLeaks.map(cat=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);margin-bottom:6px"><span style="font-size:18px">${cat.i}</span><div style="flex:1"><div style="font-size:13px;color:#CBD5E1">${cat.n}</div><div style="font-size:11px;color:#475569">Budget ${fmt(cat.b)}</div></div><div style="font-family:'DM Mono',monospace;font-size:13px;color:#EF4444;font-weight:600">+${fmt(cat.over)}</div></div>`).join("")}
+  </div>`:""}
+
+  ${uncategorised.length>0?`<div style="padding:12px 20px 0"><div style="padding:10px 14px;border-radius:12px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);display:flex;align-items:center;gap:10px"><span style="font-size:18px">❓</span><div><div style="font-size:13px;color:#CBD5E1">${uncategorised.length} uncategorised transactions</div><div style="font-size:11px;color:#475569">${fmt(uncategorised.reduce((s,t)=>s+t.amount,0))} untracked</div></div></div></div>`:""}
+
+  <div style="padding:16px 20px 0">
+    <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:#94A3B8;margin-bottom:8px">🌱 Seed Capital</div>
+    <div style="border-radius:16px;padding:18px;background:linear-gradient(135deg,#FACC1510,#4F8EF710);border:1px solid #FACC1530">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+        <div>
+          <div style="font-size:10px;color:#475569;font-family:'DM Mono',monospace;margin-bottom:3px">SAVED</div>
+          <input type="number" value="${seedSaved}" onfocus="this.select()" onchange="setState({seedSaved:parseFloat(this.value)||0})" style="background:transparent;border:none;border-bottom:1px solid #FACC1560;color:#FACC15;font-family:'Syne',sans-serif;font-weight:800;font-size:26px;width:120px;outline:none;letter-spacing:-0.02em"/>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:10px;color:#475569;font-family:'DM Mono',monospace;margin-bottom:3px">TARGET</div>
+          <input type="number" value="${seedTarget}" onfocus="this.select()" onchange="setState({seedTarget:parseFloat(this.value)||10000})" style="background:transparent;border:none;border-bottom:1px solid #4F8EF760;color:#4F8EF7;font-family:'Syne',sans-serif;font-weight:700;font-size:18px;width:90px;outline:none;text-align:right"/>
+          ${seedMonths?`<div style="font-size:10px;color:#475569;font-family:'DM Mono',monospace;margin-top:2px">${seedMonths}mo at this rate</div>`:""}
+        </div>
+      </div>
+      <div style="position:relative;margin-bottom:20px">
+        <div style="background:rgba(255,255,255,.07);border-radius:99px;height:10px;overflow:hidden"><div style="width:${seedPct}%;height:100%;border-radius:99px;background:linear-gradient(90deg,#FACC15,#4FD98E);transition:width .8s ease;box-shadow:0 0 10px #FACC1560"></div></div>
+        <div style="position:relative;height:20px;margin-top:4px">
+          ${[.25,.5,.75,1].map(m=>`<div style="position:absolute;left:${m*100}%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:2px"><div style="width:1px;height:4px;background:${seedSaved>=m*seedTarget?"#FACC15":"#1E293B"}"></div><div style="font-size:9px;font-family:'DM Mono',monospace;color:${seedSaved>=m*seedTarget?"#FACC15":"#334155"};white-space:nowrap">${m===1?"🎯":fmt(m*seedTarget)}</div></div>`).join("")}
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        ${[{l:"PROGRESS",v:`${Math.round(seedPct)}%`,c:"#FACC15"},{l:"REMAINING",v:fmt(Math.max(seedRem,0)),c:"#94A3B8"},{l:"THIS MONTH",v:transactions.length>0?(netSavings>0?"+"+fmt(netSavings):fmt(netSavings)):"—",c:netSavings>0?"#4FD98E":"#EF4444"}].map(s=>`<div style="flex:1;background:rgba(0,0,0,.2);border-radius:10px;padding:8px 10px"><div style="font-size:9px;color:#475569;font-family:'DM Mono',monospace;margin-bottom:4px">${s.l}</div><div style="font-size:13px;font-family:'Syne',sans-serif;font-weight:700;color:${s.c}">${s.v}</div></div>`).join("")}
+      </div>
+      <div style="margin-top:10px;font-size:10px;color:#334155;font-family:'DM Mono',monospace;text-align:center">edit saved &amp; target above · ${fmt(seedRem)} to go</div>
+    </div>
+  </div>
+
+  <div style="padding:16px 20px 16px">
+    <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:#94A3B8;margin-bottom:8px">${transactions.length>0?"Monthly trend":"6-month trend (sample)"}</div>
+    <div style="background:#0D1829;border-radius:14px;padding:12px 8px;border:1px solid #1E293B">${barChart(chartD,W,140)}</div>
+  </div>
+</div>`;
+}
+
+function renderCategories(d){
+  const{spend}=d,{activeGroup}=state;
+  const groups=["All",...[...new Set(CATS.map(c=>c.g))]];
+  const filtered=activeGroup==="All"?CATS:CATS.filter(c=>c.g===activeGroup);
+  const totalSpend=Object.values(spend).reduce((a,b)=>a+b,0),totalBudgeted=CATS.reduce((a,c)=>a+c.b,0);
+  return`<div class="section" style="padding:20px 16px 0">
+  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#F1F5F9;margin-bottom:16px">Categories</div>
+  <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:12px">${groups.map(g=>`<button class="pill${activeGroup===g?" on":""}" onclick="setState({activeGroup:'${g}'})">${g}</button>`).join("")}</div>
+  ${filtered.map(cat=>{const sp=spend[cat.n],b=cat.b,pct=(sp/b)*100,rem=b-sp,over=rem<0;return`<div class="card">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <span style="font-size:20px">${cat.i}</span>
+      <div style="flex:1"><div style="font-size:13px;color:#CBD5E1;font-weight:500">${cat.n}</div><div style="font-size:10px;color:#334155;font-family:'DM Mono',monospace">${cat.g}</div></div>
+      <div style="text-align:right"><div style="font-size:14px;font-family:'DM Mono',monospace;color:${over?"#EF4444":"#E2E8F0"};font-weight:600">${fmt(sp)}</div><div style="font-size:11px;color:#475569;font-family:'DM Mono',monospace">of ${fmt(b)}</div></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">${progBar(pct,cat.c)}<div style="font-size:11px;font-family:'DM Mono',monospace;font-weight:600;color:${over?"#EF4444":rem<b*.15?"#F59E0B":"#4FD98E"};min-width:52px;text-align:right">${over?"-":""}${fmt(Math.abs(rem))}</div></div>
+  </div>`;}).join("")}
+  <div style="padding:14px;border-radius:12px;background:#0D1829;border:1px solid #1E293B;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+    <div style="font-family:'Syne',sans-serif;font-weight:700;color:#F1F5F9">Total</div>
+    <div style="display:flex;gap:20px">
+      <div style="text-align:right"><div style="font-size:10px;color:#475569;font-family:'DM Mono',monospace">SPENT</div><div style="font-size:15px;font-family:'DM Mono',monospace;color:#F97B4F;font-weight:600">${fmt(totalSpend)}</div></div>
+      <div style="text-align:right"><div style="font-size:10px;color:#475569;font-family:'DM Mono',monospace">BUDGET</div><div style="font-size:15px;font-family:'DM Mono',monospace;color:#4F8EF7;font-weight:600">${fmt(totalBudgeted)}</div></div>
+    </div>
+  </div>
+</div>`;
+}
+
+function renderTrends(d){
+  const{spend,trendData}=d,{transactions}=state;
+  const netSavings=INCOME-Object.values(spend).reduce((a,b)=>a+b,0);
+  const chartD=trendData.length>=2?trendData:[{label:"Nov",income:5200,exp:4320},{label:"Dec",income:5200,exp:5100},{label:"Jan",income:5200,exp:4680},{label:"Feb",income:5200,exp:4210},{label:"Mar",income:5200,exp:4890},{label:"Apr",income:5200,exp:4150}];
+  const avgExp=Math.round(chartD.reduce((a,m)=>a+m.exp,0)/chartD.length);
+  const sorted=[...CATS].sort((a,b)=>spend[b.n]-spend[a.n]).slice(0,5);
+  const maxS=Math.max(...CATS.map(c=>spend[c.n]),1);
+  const W=Math.min(window.innerWidth,430)-48;
+  return`<div class="section" style="padding:20px 16px 0">
+  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#F1F5F9;margin-bottom:16px">Trends</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+    ${[{l:"AVG MONTHLY",v:fmt(avgExp),c:"#4F8EF7"},{l:"NET SAVINGS",v:(netSavings>=0?"+":"")+fmt(netSavings),c:netSavings>=0?"#4FD98E":"#EF4444"},{l:"BEST MONTH",v:fmt(Math.min(...chartD.map(m=>m.exp))),c:"#4FD98E"},{l:"WORST MONTH",v:fmt(Math.max(...chartD.map(m=>m.exp))),c:"#EF4444"}].map(s=>`<div style="background:#0D1829;border:1px solid #1E293B;border-radius:12px;padding:14px"><div style="font-size:10px;color:#475569;font-family:'DM Mono',monospace;margin-bottom:6px">${s.l}</div><div style="font-size:20px;font-family:'Syne',sans-serif;font-weight:800;color:${s.c};letter-spacing:-0.02em">${s.v}</div></div>`).join("")}
+  </div>
+  <div style="background:#0D1829;border:1px solid #1E293B;border-radius:14px;padding:16px 8px;margin-bottom:12px">
+    <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#94A3B8;margin-bottom:12px;padding-left:8px">Income vs Expenses</div>
+    ${barChart(chartD,W,200)}
+  </div>
+  <div style="background:#0D1829;border:1px solid #1E293B;border-radius:14px;padding:16px;margin-bottom:12px">
+    <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#94A3B8;margin-bottom:12px">Top 5 Categories</div>
+    ${sorted.map((cat,i)=>`<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><div style="font-size:11px;color:#334155;font-family:'DM Mono',monospace;width:16px">#${i+1}</div><span style="font-size:18px">${cat.i}</span><div style="flex:1"><div style="font-size:12px;color:#CBD5E1;margin-bottom:4px">${cat.n}</div><div style="background:#1E293B;border-radius:99px;height:4px;overflow:hidden"><div style="width:${(spend[cat.n]/maxS)*100}%;height:100%;background:${cat.c};border-radius:99px"></div></div></div><div style="font-size:12px;font-family:'DM Mono',monospace;color:#CBD5E1;min-width:52px;text-align:right">${fmt(spend[cat.n])}</div></div>`).join("")}
+  </div>
+  ${transactions.length>0?`<div style="padding:12px 14px;border-radius:12px;background:rgba(79,142,247,.05);border:1px solid #4F8EF720;display:flex;align-items:center;gap:10px;margin-bottom:8px"><div style="font-size:18px">📊</div><div style="flex:1"><div style="font-size:12px;color:#CBD5E1">${transactions.length} transactions imported</div><div style="font-size:11px;color:#475569">${[...new Set(transactions.map(t=>t.month))].length} months of data</div></div><button onclick="setState({showImport:true})" style="padding:6px 12px;border-radius:8px;border:none;background:rgba(79,142,247,.15);color:#4F8EF7;font-size:11px;cursor:pointer">+ Add more</button></div>`:""}
+</div>`;
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function render(){
+  const{tab,showLog,showImport,toast}=state;
+  const d=derived();
+  const scroll=document.getElementById("scroll");
+  const nav=document.getElementById("nav");
+  const app=document.getElementById("app");
+  if(!scroll||!nav)return;
+
+  if(tab==="home")scroll.innerHTML=renderHome(d);
+  else if(tab==="categories")scroll.innerHTML=renderCategories(d);
+  else scroll.innerHTML=renderTrends(d);
+
+  document.querySelectorAll(".sheet,.toast").forEach(e=>e.remove());
+  if(showImport)app.insertAdjacentHTML("beforeend",renderImportSheet());
+  if(showLog)app.insertAdjacentHTML("beforeend",renderLogSheet());
+  if(toast)app.insertAdjacentHTML("beforeend",`<div class="toast">${toast}</div>`);
+
+  const tabs=[{id:"home",icon:"🏠",lbl:"Home"},{id:"categories",icon:"📊",lbl:"Spend"},{id:"trends",icon:"📈",lbl:"Trends"}];
+  nav.innerHTML=tabs.map(t=>`<button class="nav-btn" onclick="setState({tab:'${t.id}'})" style="color:${tab===t.id?"#4F8EF7":"#334155"}"><span style="font-size:20px">${t.icon}</span><span style="font-size:10px;font-family:'DM Mono',monospace;letter-spacing:.06em;color:${tab===t.id?"#4F8EF7":"#475569"}">${t.lbl}</span></button>`).join("")+"<div style='flex:1'></div>";
+
+  app.style.opacity="1";
+}
+
+render();
+</script>
+</body>
+</html>
